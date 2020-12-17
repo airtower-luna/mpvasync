@@ -67,15 +67,28 @@ class MpvClient:
             await self.close()
 
 
-async def main():
-    async with MpvClient('/tmp/mpvsock').connection() as m:
+async def main(socket):
+    async with MpvClient(socket).connection() as m:
         response = await m.command('get_property', ['pause'])
         print(response)
-
         response = await m.command('set_property',
                                    ['pause', not response['data']])
         print(response)
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    import argparse
+    parser = argparse.ArgumentParser(
+        description='Toggle mpv pause')
+    parser.add_argument('--socket', default='/tmp/mpvsocket',
+                        help='mpv JSON IPC socket to connect to')
+
+    # enable bash completion if argcomplete is available
+    try:
+        import argcomplete
+        argcomplete.autocomplete(parser)
+    except ImportError:
+        pass
+
+    args = parser.parse_args()
+    asyncio.run(main(socket=args.socket))
