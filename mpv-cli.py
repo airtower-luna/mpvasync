@@ -4,7 +4,7 @@ import json
 from contextlib import asynccontextmanager
 
 
-class MpvCli:
+class MpvClient:
     def __init__(self, path):
         self.path = path
         self._commands = dict()
@@ -65,7 +65,7 @@ class MpvCli:
 
 
 async def main():
-    async with MpvCli('/tmp/mpvsock').connection() as m:
+    async with MpvClient('/tmp/mpvsock').connection() as m:
         response = await m.command('get_property', ['pause'])
         print(response)
 
