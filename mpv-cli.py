@@ -16,8 +16,9 @@ class MpvCli:
         self.writer.close()
         await self.writer.wait_closed()
 
-    async def command(self, cmd):
-        self.writer.write(json.dumps(cmd, separators=(',', ':')).encode())
+    async def command(self, cmd, params=[]):
+        self.writer.write(json.dumps(
+            {'command': [cmd, *params]}, separators=(',', ':')).encode())
         self.writer.write(b'\n')
         await self.writer.drain()
 
@@ -35,13 +36,11 @@ class MpvCli:
 
 async def main():
     async with MpvCli('/tmp/mpvsock').connection() as m:
-        pause_command = {'command': ['get_property', 'pause']}
-        response = await m.command(pause_command)
+        response = await m.command('get_property', ['pause'])
         print(response)
 
-        toggle_command = {'command': ['set_property', 'pause',
-                                      not response['data']]}
-        response = await m.command(toggle_command)
+        response = await m.command('set_property',
+                                   ['pause', not response['data']])
         print(response)
 
 
