@@ -10,6 +10,7 @@ class MpvClient:
         self._commands = dict()
         self._commands_lock = asyncio.Lock()
         self._cid = 1
+        self.writer = None
 
     async def connect(self):
         self.reader, self.writer = \
@@ -28,9 +29,11 @@ class MpvClient:
                 print(f'Received event: {msg!s}')
 
     async def close(self):
-        self.writer.close()
-        await self.writer.wait_closed()
-        await self._handler
+        if self.writer is not None:
+            self.writer.close()
+            await self.writer.wait_closed()
+            await self._handler
+            self.writer = None
 
     async def command(self, cmd, params=[]):
         async with self._commands_lock:
