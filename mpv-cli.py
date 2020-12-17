@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# PYTHON_ARGCOMPLETE_OK
 import asyncio
 import json
 from contextlib import asynccontextmanager
