@@ -28,6 +28,8 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response['error'], 'success')
             self.assertEqual(response['data'], [])
             self.assertIsInstance(response['request_id'], int)
+            # ensure internal command data has been cleaned up
+            self.assertEqual(m._commands, dict())
 
     async def asyncTearDown(self):
         self.mpv.terminate()
