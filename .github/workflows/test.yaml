@@ -6,6 +6,7 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-20.04
+    name: Lint
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python 3
@@ -21,12 +22,18 @@ jobs:
 
   test:
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python-version:
+          - 3.8
+          - 3.9
+    name: Test Python ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python 3.8
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v1
         with:
-          python-version: 3.8
+          python-version: ${{ matrix.python-version }}
       - name: install mpv
         run: |
           sudo apt-get -y install mpv
