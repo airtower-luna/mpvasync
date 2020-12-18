@@ -2,7 +2,10 @@
 # PYTHON_ARGCOMPLETE_OK
 import asyncio
 import json
+import logging
 from contextlib import asynccontextmanager
+
+logger = logging.getLogger(__name__)
 
 
 class MpvClient:
@@ -27,7 +30,7 @@ class MpvClient:
                     self._commands[cid] = msg
                     event.set()
             else:
-                print(f'Received event: {msg!s}')
+                logging.info(f'Received event: {msg!s}')
 
     async def close(self):
         if self.writer is not None:
@@ -83,6 +86,10 @@ if __name__ == '__main__':
         description='Toggle mpv pause')
     parser.add_argument('--socket', default='/tmp/mpvsocket',
                         help='mpv JSON IPC socket to connect to')
+    parser.add_argument('--log', default='INFO',
+                        choices={'CRITICAL', 'ERROR', 'WARNING',
+                                 'INFO', 'DEBUG'},
+                        help='mpv JSON IPC socket to connect to')
 
     # enable bash completion if argcomplete is available
     try:
@@ -92,4 +99,5 @@ if __name__ == '__main__':
         pass
 
     args = parser.parse_args()
+    logging.basicConfig(level=getattr(logging, args.log))
     asyncio.run(main(socket=args.socket))
