@@ -97,7 +97,7 @@ async def playlist(args):
 async def load_file(args):
     async with MpvClient(args.socket).connection() as m:
         for i, f in enumerate(args.file):
-            response = await m.loadfile(f, append=(args.append or i > 0))
+            await m.loadfile(f, append=(args.append or i > 0))
 
 
 async def toggle_pause(args):
