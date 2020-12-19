@@ -3,6 +3,7 @@
 import asyncio
 import json
 import logging
+import sys
 from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
@@ -71,13 +72,12 @@ class MpvClient:
             await self.close()
 
 
-async def main(socket):
-    async with MpvClient(socket).connection() as m:
-        response = await m.command('get_property', ['pause'])
-        print(response)
-        response = await m.command('set_property',
-                                   ['pause', not response['data']])
-        print(response)
+async def toggle_pause(args):
+    async with MpvClient(args.socket).connection() as m:
+        response = await m.command('cycle', ['pause'])
+        if response['error'] != 'success':
+            print(f'Command failed: {response!s}', file=sys.stderr)
+            return 1
 
 
 if __name__ == '__main__':
@@ -90,6 +90,9 @@ if __name__ == '__main__':
                         choices={'CRITICAL', 'ERROR', 'WARNING',
                                  'INFO', 'DEBUG'},
                         help='mpv JSON IPC socket to connect to')
+    subparsers = parser.add_subparsers(title='commands')
+    pause = subparsers.add_parser('toggle-pause', aliases=['toggle'])
+    pause.set_defaults(func=toggle_pause)
 
     # enable bash completion if argcomplete is available
     try:
@@ -100,4 +103,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     logging.basicConfig(level=getattr(logging, args.log))
-    asyncio.run(main(socket=args.socket))
+    if 'func' not in args:
+        parser.print_usage()
+    else:
+        ret = asyncio.run(args.func(args))
+        sys.exit(ret)
