@@ -2,6 +2,7 @@ import asyncio
 import os
 import tempfile
 import unittest
+import wave
 from mpvasync import MpvClient, MpvError
 from pathlib import Path
 
@@ -21,6 +22,28 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
         # wait for the socket to be ready
         while not p.is_socket():
             await asyncio.sleep(.05)
+
+    async def test_load_file(self):
+        fh, sample = tempfile.mkstemp()
+        os.close(fh)
+        try:
+            # generate wav sample
+            with wave.open(sample, 'wb') as w:
+                w.setframerate(4)
+                w.setsampwidth(4)
+                w.setnchannels(1)
+                w.writeframes(b'\x00\x00\x00\x00')
+            async with MpvClient(self.sockpath).connection() as m:
+                await m.loadfile(sample)
+                response = await m.command('get_property', ['playlist'])
+                self.assertEqual(response['error'], 'success')
+                self.assertEqual(len(response['data']), 1)
+                self.assertEqual(response['data'][0]['filename'], sample)
+                self.assertIsInstance(response['request_id'], int)
+                # ensure internal command data has been cleaned up
+                self.assertEqual(m._commands, dict())
+        finally:
+            os.unlink(sample)
 
     async def test_get_playlist(self):
         async with MpvClient(self.sockpath).connection() as m:
