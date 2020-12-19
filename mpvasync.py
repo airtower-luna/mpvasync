@@ -3,10 +3,15 @@
 import asyncio
 import json
 import logging
-import sys
 from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
+
+
+class MpvError(Exception):
+    '''This exception is raised if mpv returns an error for a command.'''
+    def __init__(self, response):
+        super().__init__(response['error'])
 
 
 class MpvClient:
@@ -61,6 +66,9 @@ class MpvClient:
         async with self._commands_lock:
             response = self._commands[cid]
             del self._commands[cid]
+
+        if response['error'] != 'success':
+            raise MpvError(response)
         return response
 
     @asynccontextmanager
@@ -74,10 +82,7 @@ class MpvClient:
 
 async def toggle_pause(args):
     async with MpvClient(args.socket).connection() as m:
-        response = await m.command('cycle', ['pause'])
-        if response['error'] != 'success':
-            print(f'Command failed: {response!s}', file=sys.stderr)
-            return 1
+        await m.command('cycle', ['pause'])
 
 
 if __name__ == '__main__':
@@ -106,5 +111,4 @@ if __name__ == '__main__':
     if 'func' not in args:
         parser.print_usage()
     else:
-        ret = asyncio.run(args.func(args))
-        sys.exit(ret)
+        asyncio.run(args.func(args))

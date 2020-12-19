@@ -2,7 +2,7 @@ import asyncio
 import os
 import tempfile
 import unittest
-from mpvasync import MpvClient
+from mpvasync import MpvClient, MpvError
 from pathlib import Path
 
 
@@ -29,6 +29,13 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response['data'], [])
             self.assertIsInstance(response['request_id'], int)
             # ensure internal command data has been cleaned up
+            self.assertEqual(m._commands, dict())
+
+    async def test_invalid_get_command(self):
+        async with MpvClient(self.sockpath).connection() as m:
+            with self.assertRaises(MpvError):
+                # get_property expects only one parameter
+                await m.command('get_property', ['playlist', 'xyz'])
             self.assertEqual(m._commands, dict())
 
     async def asyncTearDown(self):
