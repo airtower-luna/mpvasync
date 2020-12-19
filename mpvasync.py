@@ -66,10 +66,17 @@ class MpvClient:
         async with self._commands_lock:
             response = self._commands[cid]
             del self._commands[cid]
+        logging.debug(f'Received response: {response!s}')
 
         if response['error'] != 'success':
             raise MpvError(response)
         return response
+
+    async def loadfile(self, file, append=False):
+        args = [file]
+        if append:
+            args.append('append')
+        return await self.command('loadfile', args)
 
     @asynccontextmanager
     async def connection(self):
@@ -80,6 +87,19 @@ class MpvClient:
             await self.close()
 
 
+async def playlist(args):
+    async with MpvClient(args.socket).connection() as m:
+        response = await m.command('get_property', ['playlist'])
+        for p in response['data']:
+            print(f'{"*" if p.get("current") else " "} {p["filename"]}')
+
+
+async def load_file(args):
+    async with MpvClient(args.socket).connection() as m:
+        for i, f in enumerate(args.file):
+            response = await m.loadfile(f, append=(args.append or i > 0))
+
+
 async def toggle_pause(args):
     async with MpvClient(args.socket).connection() as m:
         await m.command('cycle', ['pause'])
@@ -88,16 +108,26 @@ async def toggle_pause(args):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
-        description='Toggle mpv pause')
-    parser.add_argument('--socket', default='/tmp/mpvsocket',
-                        help='mpv JSON IPC socket to connect to')
-    parser.add_argument('--log', default='INFO',
-                        choices={'CRITICAL', 'ERROR', 'WARNING',
-                                 'INFO', 'DEBUG'},
-                        help='mpv JSON IPC socket to connect to')
+        description='control mpv via socket IPC')
+    parser.add_argument(
+        '--socket', default='/tmp/mpvsocket',
+        help='mpv JSON IPC socket to connect to')
+    parser.add_argument(
+        '--log', default='INFO', help='mpv JSON IPC socket to connect to',
+        choices={'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'})
     subparsers = parser.add_subparsers(title='commands')
-    pause = subparsers.add_parser('toggle-pause', aliases=['toggle'])
+    pause = subparsers.add_parser(
+        'toggle-pause', aliases=['toggle'], help='toggle pause/play')
     pause.set_defaults(func=toggle_pause)
+    load = subparsers.add_parser(
+        'loadfile', help='load files (or URLs) to play')
+    load.set_defaults(func=load_file)
+    load.add_argument('file', nargs='+', help='files (or URLs) to play')
+    load.add_argument(
+        '--append', '-a', action='store_true',
+        help='append file(s) to current playlist instead of replacing it')
+    plist = subparsers.add_parser('playlist', help='show current playlist')
+    plist.set_defaults(func=playlist)
 
     # enable bash completion if argcomplete is available
     try:

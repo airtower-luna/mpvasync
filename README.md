@@ -9,9 +9,11 @@ feature of the mpv interface, so commands can be interleaved.
 
 The Python API is very limited for now, you pass in command strings
 (as defined in the mpv IPC documentation) and possibly arguments, and
-get back the data structure returned by mpv, already parsed from JSON.
+get back the data structure returned by mpv, already parsed from
+JSON. `mpvasync.MpvError` is raised if a command returns an error.
 
-If you run [`mpvasync.py`](mpvasync.py) as a script it will toggle the
-pause status.
+[`mpvasync.py`](mpvasync.py) can be used as a command line tool that
+can toggle the pause status, and change or show the playlist. See
+`mpvasync.py -h` for details.
 
 Enjoy! :notes:
