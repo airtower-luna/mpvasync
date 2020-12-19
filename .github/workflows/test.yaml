@@ -34,9 +34,15 @@ jobs:
         uses: actions/setup-python@v2.2.1
         with:
           python-version: ${{ matrix.python-version }}
+      - name: install coverage
+        run: |
+          pip install coverage
       - name: install mpv
         run: |
           sudo apt-get -y install mpv
-      - name: run unittest
+      - name: run unittest with coverage
         run: |
-          python -m unittest -v
+          coverage run -m unittest -v
+      - name: coverage report
+        run: |
+          coverage report --include="$(pwd)/*"

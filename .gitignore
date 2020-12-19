@@ -1,2 +1,6 @@
 *~
 __pycache__/
+
+# data and report for test coverage measurement
+.coverage
+/htmlcov/
