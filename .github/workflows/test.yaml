@@ -16,6 +16,8 @@ jobs:
       - name: install flake8
         run: |
           pip install flake8
+      - name: setup annotations for flake8 results
+        uses: rbialon/flake8-annotations@v1
       - name: run flake8
         run: |
           flake8 . --count --show-source --statistics

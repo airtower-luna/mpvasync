@@ -7,12 +7,10 @@ from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
-
 class MpvError(Exception):
     '''This exception is raised if mpv returns an error for a command.'''
     def __init__(self, response):
         super().__init__(response['error'])
-
 
 class MpvClient:
     def __init__(self, path):
