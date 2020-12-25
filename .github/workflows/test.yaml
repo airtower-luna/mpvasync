@@ -16,9 +16,13 @@ jobs:
       - name: install flake8
         run: |
           pip install flake8
+      - name: setup annotations for flake8 results
+        uses: rbialon/flake8-annotations@v1
       - name: run flake8
         run: |
-          flake8 . --count --show-source --statistics
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --show-source --statistics
 
   test:
     runs-on: ubuntu-20.04
