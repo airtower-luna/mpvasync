@@ -4,48 +4,63 @@ import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager
+from typing import Any, Dict, Mapping, Optional, Sequence
 
 logger = logging.getLogger(__name__)
 
 
 class MpvError(Exception):
     '''This exception is raised if mpv returns an error for a command.'''
-    def __init__(self, response):
+    def __init__(self, response: Mapping[str, Any]) -> None:
         super().__init__(response['error'])
 
 
+class MpvCommandState():
+    '''Stored in the client's _commands dict before sending an async
+    command to mpv. The event is set after a response has been
+    received and written to the response attribute.
+
+    '''
+    def __init__(self) -> None:
+        self.event = asyncio.Event()
+        self.response: Optional[Dict[str, Any]] = None
+
+
 class MpvClient:
-    def __init__(self, path):
+    def __init__(self, path: str) -> None:
         self.path = path
-        self._commands = dict()
+        self._commands: Dict[int, MpvCommandState] = dict()
         self._commands_lock = asyncio.Lock()
         self._cid = 1
-        self.writer = None
+        self.writer: Optional[asyncio.StreamWriter] = None
 
-    async def connect(self):
+    async def connect(self) -> None:
         self.reader, self.writer = \
             await asyncio.open_unix_connection(self.path)
         self._handler = asyncio.create_task(self._handle_incoming())
 
-    async def _handle_incoming(self):
+    async def _handle_incoming(self) -> None:
         while (raw := await self.reader.readline()) != b'':
             msg = json.loads(raw.decode())
             if cid := msg.get('request_id'):
                 async with self._commands_lock:
-                    event = self._commands[cid]
-                    self._commands[cid] = msg
-                    event.set()
+                    self._commands[cid].response = msg
+                    self._commands[cid].event.set()
             else:
                 logging.info(f'Received event: {msg!s}')
 
-    async def close(self):
+    async def close(self) -> None:
         if self.writer is not None:
             self.writer.close()
             await self.writer.wait_closed()
             await self._handler
             self.writer = None
 
-    async def command(self, cmd, params=[]):
+    async def command(self, cmd: str, params: Sequence[str] = []) \
+            -> Dict[str, Any]:
+        if self.writer is None:
+            raise ValueError('Not connected to mpv!')
+
         async with self._commands_lock:
             cid = self._cid
             # Let's assume there will be sufficiently fewer than 65536
@@ -53,8 +68,7 @@ class MpvClient:
             # request ID for async requests MUST NOT be 0 or they will
             # hang indefinitely.
             self._cid = self._cid % 65536 + 1
-            event = asyncio.Event()
-            self._commands[cid] = event
+            self._commands[cid] = MpvCommandState()
 
         self.writer.write(json.dumps(
             {'command': [cmd, *params], 'request_id': cid, 'async': True},
@@ -62,9 +76,10 @@ class MpvClient:
         self.writer.write(b'\n')
         await self.writer.drain()
 
-        await event.wait()
+        await self._commands[cid].event.wait()
         async with self._commands_lock:
-            response = self._commands[cid]
+            response = self._commands[cid].response
+            assert response is not None
             del self._commands[cid]
         logging.debug(f'Received response: {response!s}')
 
@@ -72,7 +87,7 @@ class MpvClient:
             raise MpvError(response)
         return response
 
-    async def loadfile(self, file, append=False):
+    async def loadfile(self, file: str, append: bool = False):
         args = [file]
         if append:
             args.append('append')
