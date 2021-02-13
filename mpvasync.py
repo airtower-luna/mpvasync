@@ -174,7 +174,7 @@ if __name__ == '__main__':
         help='append file(s) to current playlist instead of replacing it')
     plist = subparsers.add_parser('playlist', help='show current playlist')
     plist.set_defaults(func=playlist)
-    mon = subparsers.add_parser('monitor', help='show current playlist')
+    mon = subparsers.add_parser('monitor', help='monitor mpv events')
     mon.set_defaults(func=monitor)
     mon.add_argument('--property', '-p', action='append', dest='properties',
                      metavar='PROPERTY', default=[],
