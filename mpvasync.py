@@ -146,6 +146,8 @@ async def toggle_pause(args):
 
 async def monitor(args):
     async with MpvClient(args.socket).connection() as m:
+        for i, p in enumerate(args.properties, start=1):
+            await m.command('observe_property', [i, p])
         async for event in m.listen():
             print(f'Received {event["event"]} event: {event!s}')
 
@@ -174,6 +176,10 @@ if __name__ == '__main__':
     plist.set_defaults(func=playlist)
     mon = subparsers.add_parser('monitor', help='show current playlist')
     mon.set_defaults(func=monitor)
+    mon.add_argument('--property', '-p', action='append', dest='properties',
+                     metavar='PROPERTY', default=[],
+                     help='monitor this property (may be specified multiple '
+                     'times)')
 
     # enable bash completion if argcomplete is available
     try:
