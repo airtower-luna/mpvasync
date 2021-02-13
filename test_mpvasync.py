@@ -66,6 +66,21 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
                 await m.command('get_property', ['playlist', 'xyz'])
             self.assertEqual(m._commands, dict())
 
+    async def test_listen_event(self):
+        async with MpvClient(self.sockpath).connection() as m:
+            await m.command('observe_property', [1, 'playlist'])
+
+            async def wait_playlist_change():
+                async for event in m.listen():
+                    if event['event'] == 'property-change' \
+                       and event['name'] == 'playlist':
+                        return event
+            event_wait = asyncio.create_task(wait_playlist_change())
+
+            await m.loadfile(self.sample)
+            event = await event_wait
+            self.assertEqual(event['data'][0]['filename'], self.sample)
+
     async def asyncTearDown(self):
         self.mpv.terminate()
         await self.mpv.wait()

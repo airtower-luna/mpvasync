@@ -4,7 +4,7 @@ import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager
-from typing import Any, Dict, Mapping, Optional, Sequence
+from typing import Any, Dict, AsyncIterable, Mapping, Optional, Sequence, Set
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,8 @@ class MpvClient:
         self.path = path
         self._commands: Dict[int, MpvCommandState] = dict()
         self._commands_lock = asyncio.Lock()
+        self._listeners: Set[asyncio.Queue] = set()
+        self._listeners_lock = asyncio.Lock()
         self._cid = 1
         self.writer: Optional[asyncio.StreamWriter] = None
 
@@ -47,7 +49,14 @@ class MpvClient:
                     self._commands[cid].response = msg
                     self._commands[cid].event.set()
             else:
-                logging.info(f'Received event: {msg!s}')
+                logging.debug(f'Received event: {msg!s}')
+                async with self._listeners_lock:
+                    for listener in self._listeners:
+                        await listener.put(msg)
+
+        async with self._listeners_lock:
+            for listener in self._listeners:
+                await listener.put(None)
 
     async def close(self) -> None:
         if self.writer is not None:
@@ -55,6 +64,21 @@ class MpvClient:
             await self.writer.wait_closed()
             await self._handler
             self.writer = None
+
+    async def listen(self) -> AsyncIterable[Dict]:
+        q: asyncio.Queue[Dict] = asyncio.Queue()
+        async with self._listeners_lock:
+            self._listeners.add(q)
+        try:
+            while True:
+                event = await q.get()
+                if event is None:
+                    break
+                else:
+                    yield event
+        finally:
+            async with self._listeners_lock:
+                self._listeners.remove(q)
 
     async def command(self, cmd: str, params: Sequence[str] = []) \
             -> Dict[str, Any]:
@@ -120,6 +144,11 @@ async def toggle_pause(args):
         await m.command('cycle', ['pause'])
 
 
+async def monitor(args):
+    async with MpvClient(args.socket).connection() as m:
+        async for event in m.listen():
+            print(f'Received {event["event"]} event: {event!s}')
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
@@ -143,6 +172,8 @@ if __name__ == '__main__':
         help='append file(s) to current playlist instead of replacing it')
     plist = subparsers.add_parser('playlist', help='show current playlist')
     plist.set_defaults(func=playlist)
+    mon = subparsers.add_parser('monitor', help='show current playlist')
+    mon.set_defaults(func=monitor)
 
     # enable bash completion if argcomplete is available
     try:
@@ -156,4 +187,7 @@ if __name__ == '__main__':
     if 'func' not in args:
         parser.print_usage()
     else:
-        asyncio.run(args.func(args))
+        try:
+            asyncio.run(args.func(args))
+        except KeyboardInterrupt:
+            logging.info('Received keyboard interrupt, exiting.')
