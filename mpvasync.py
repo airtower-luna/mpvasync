@@ -3,6 +3,7 @@
 import asyncio
 import json
 import logging
+import os.path
 from contextlib import asynccontextmanager
 from typing import Any, Dict, AsyncIterable, Mapping, Optional, Sequence, Set
 
@@ -112,7 +113,7 @@ class MpvClient:
         return response
 
     async def loadfile(self, file: str, append: bool = False):
-        args = [file]
+        args = [os.path.abspath(file)]
         if append:
             args.append('append')
         return await self.command('loadfile', args)
