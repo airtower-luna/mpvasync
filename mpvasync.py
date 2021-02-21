@@ -159,6 +159,14 @@ async def monitor(args):
         async for event in m.listen():
             print(f'Received {event["event"]} event: {event!s}')
 
+
+async def get_property(args):
+    async with MpvClient(args.socket).connection() as m:
+        for p in args.properties:
+            response = await m.command('get_property', [p])
+            print(f'{p}: {response["data"]}')
+
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
@@ -188,6 +196,10 @@ if __name__ == '__main__':
         '--property', '-p', action='append', dest='properties',
         metavar='PROPERTY', default=[],
         help='monitor this property (may be specified multiple times)')
+    pget = subparsers.add_parser('get-property', help='read mpv properties')
+    pget.set_defaults(func=get_property)
+    pget.add_argument(
+        'properties', nargs='+', metavar='PROPERTY', help='property to read')
 
     # enable bash completion if argcomplete is available
     try:
