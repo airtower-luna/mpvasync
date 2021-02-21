@@ -184,10 +184,10 @@ if __name__ == '__main__':
     plist.set_defaults(func=playlist)
     mon = subparsers.add_parser('monitor', help='monitor mpv events')
     mon.set_defaults(func=monitor)
-    mon.add_argument('--property', '-p', action='append', dest='properties',
-                     metavar='PROPERTY', default=[],
-                     help='monitor this property (may be specified multiple '
-                     'times)')
+    mon.add_argument(
+        '--property', '-p', action='append', dest='properties',
+        metavar='PROPERTY', default=[],
+        help='monitor this property (may be specified multiple times)')
 
     # enable bash completion if argcomplete is available
     try:
