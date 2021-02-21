@@ -162,8 +162,13 @@ async def monitor(args):
 
 async def get_property(args):
     async with MpvClient(args.socket).connection() as m:
-        for p in args.properties:
+        async def get_prop_tuple(p):
             response = await m.command('get_property', [p])
+            return p, response
+
+        for coro in asyncio.as_completed(
+                [get_prop_tuple(p) for p in args.properties]):
+            p, response = await coro
             print(f'{p}: {response["data"]}')
 
 
