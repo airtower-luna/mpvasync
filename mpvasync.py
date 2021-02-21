@@ -6,6 +6,7 @@ import logging
 import os.path
 from contextlib import asynccontextmanager
 from typing import Any, Dict, AsyncIterable, Mapping, Optional, Sequence, Set
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -112,8 +113,14 @@ class MpvClient:
             raise MpvError(response)
         return response
 
-    async def loadfile(self, file: str, append: bool = False):
-        args = [os.path.abspath(file)]
+    async def loadfile(self, loc: str, append: bool = False):
+        u = urlparse(loc)
+        if u.scheme:
+            # loc contains a scheme, use URL unmodified
+            args = [loc]
+        else:
+            # loc is a possibly relative path, make it absolute
+            args = [os.path.abspath(loc)]
         if append:
             args.append('append')
         return await self.command('loadfile', args)
