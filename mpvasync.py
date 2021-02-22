@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import os.path
+import sys
 from contextlib import asynccontextmanager
 from typing import Any, Dict, AsyncIterable, Mapping, Optional, Sequence, Set
 from urllib.parse import urlparse
@@ -169,7 +170,9 @@ async def get_property(args):
         for coro in asyncio.as_completed(
                 [get_prop_tuple(p) for p in args.properties]):
             p, response = await coro
-            print(f'{p}: {response["data"]}')
+            print(f'{p}:')
+            json.dump(response["data"], sys.stdout, indent=2)
+            print()
 
 
 if __name__ == '__main__':
