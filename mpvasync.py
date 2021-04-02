@@ -186,7 +186,7 @@ if __name__ == '__main__':
         '--socket', default='/tmp/mpvsocket',
         help='mpv JSON IPC socket to connect to')
     parser.add_argument(
-        '--log', default='INFO', help='mpv JSON IPC socket to connect to',
+        '--log', default='INFO', help='select the log level',
         choices={'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'})
     subparsers = parser.add_subparsers(title='commands')
     pause = subparsers.add_parser(
