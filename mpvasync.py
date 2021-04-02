@@ -8,7 +8,8 @@ import re
 import subprocess
 import sys
 from contextlib import asynccontextmanager
-from typing import Any, Dict, AsyncIterable, Mapping, Optional, Sequence, Set
+from typing import Any, Dict, AsyncIterable, Mapping, Optional, Sequence, \
+    Set, TYPE_CHECKING
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -215,12 +216,13 @@ if __name__ == '__main__':
     try:
         import argcomplete
         from argcomplete.completers import ChoicesCompleter
-        lproc = subprocess.run(
-            ['mpv', '--input-ipc-server=', '--list-properties'],
-            stdout=subprocess.PIPE, text=True)
-        pselect.completer = ChoicesCompleter(
-            m.group(1) for m in re.finditer(
-                r'^\s([-\w]+)$', lproc.stdout, re.MULTILINE))
+        if not TYPE_CHECKING:
+            lproc = subprocess.run(
+                ['mpv', '--input-ipc-server=', '--list-properties'],
+                stdout=subprocess.PIPE, text=True)
+            pselect.completer = ChoicesCompleter(
+                m.group(1) for m in re.finditer(
+                    r'^\s([-\w]+)$', lproc.stdout, re.MULTILINE))
         argcomplete.autocomplete(parser)
     except ImportError:
         pass
