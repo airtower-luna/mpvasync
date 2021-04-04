@@ -100,9 +100,11 @@ class MpvClient:
             self._cid = self._cid % 65536 + 1
             self._commands[cid] = MpvCommandState()
 
-        self.writer.write(json.dumps(
+        jcmd = json.dumps(
             {'command': [cmd, *params], 'request_id': cid, 'async': True},
-            separators=(',', ':')).encode())
+            separators=(',', ':'))
+        logging.debug(f'Sending command ({cid}): {jcmd!s}')
+        self.writer.write(jcmd.encode())
         self.writer.write(b'\n')
         await self.writer.drain()
 
@@ -111,7 +113,7 @@ class MpvClient:
             response = self._commands[cid].response
             assert response is not None
             del self._commands[cid]
-        logging.debug(f'Received response: {response!s}')
+        logging.debug(f'Received response ({cid}): {response!s}')
 
         if response['error'] != 'success':
             raise MpvError(response)
