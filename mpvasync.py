@@ -180,6 +180,11 @@ async def get_property(args):
             print()
 
 
+async def set_property(args):
+    async with MpvClient(args.socket).connection() as m:
+        await m.command('set_property', [args.property, args.value])
+
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
@@ -211,20 +216,26 @@ if __name__ == '__main__':
         help='monitor this property (may be specified multiple times)')
     pget = subparsers.add_parser('get-property', help='read mpv properties')
     pget.set_defaults(func=get_property)
-    pselect = pget.add_argument(
+    pget_select = pget.add_argument(
         'properties', nargs='+', metavar='PROPERTY', help='property to read')
+    pset = subparsers.add_parser('set-property', help='set an mpv property')
+    pset.set_defaults(func=set_property)
+    pset_select = pset.add_argument('property', help='property to set')
+    pset.add_argument('value', help='value for the property')
 
     # enable bash completion if argcomplete is available
     try:
         import argcomplete
         from argcomplete.completers import ChoicesCompleter
+        lproc = subprocess.run(
+            ['mpv', '--input-ipc-server=', '--list-properties'],
+            stdout=subprocess.PIPE, text=True)
+        prop_completer = ChoicesCompleter(
+            m.group(1) for m in re.finditer(
+                r'^\s([-\w]+)$', lproc.stdout, re.MULTILINE))
         if not TYPE_CHECKING:
-            lproc = subprocess.run(
-                ['mpv', '--input-ipc-server=', '--list-properties'],
-                stdout=subprocess.PIPE, text=True)
-            pselect.completer = ChoicesCompleter(
-                m.group(1) for m in re.finditer(
-                    r'^\s([-\w]+)$', lproc.stdout, re.MULTILINE))
+            pget_select.completer = prop_completer
+            pset_select.completer = prop_completer
         argcomplete.autocomplete(parser)
     except ImportError:
         pass
