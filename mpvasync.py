@@ -172,12 +172,14 @@ async def get_property(args):
             response = await m.command('get_property', [p])
             return p, response
 
+        results = dict()
         for coro in asyncio.as_completed(
                 [get_prop_tuple(p) for p in args.properties]):
             p, response = await coro
-            print(f'{p}:')
-            json.dump(response["data"], sys.stdout, indent=2)
-            print()
+            results[p] = response["data"]
+
+    json.dump(results, sys.stdout, indent=2)
+    print()
 
 
 async def set_property(args):
