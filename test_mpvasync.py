@@ -77,6 +77,11 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
                         return event
             event_wait = asyncio.create_task(wait_playlist_change())
 
+            # make sure the event listener is ready before loading the
+            # test file
+            while len(m._listeners) < 1:
+                await asyncio.sleep(.1)
+
             await m.loadfile(self.sample)
             event = await event_wait
             self.assertEqual(event['data'][0]['filename'], self.sample)
