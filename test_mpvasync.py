@@ -33,7 +33,7 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.mpv = await asyncio.create_subprocess_exec(
             'mpv', '--idle=yes', f'--input-ipc-server={self.sockpath}',
-            '--no-terminal')
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
         p = Path(self.sockpath)
         # wait for the socket to be ready
         while not p.is_socket():
@@ -88,7 +88,9 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
 
     async def asyncTearDown(self):
         self.mpv.terminate()
-        await self.mpv.wait()
+        stdout, stderr = await self.mpv.communicate()
+        print(stdout.decode())
+        print(stderr.decode())
 
     def tearDown(self):
         os.unlink(self.sockpath)

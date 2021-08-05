@@ -63,7 +63,7 @@ jobs:
           sudo apt-get -y install mpv
       - name: run unittest with coverage
         run: |
-          coverage run -m unittest -v
+          coverage run -m unittest --buffer -v
       - name: coverage report
         run: |
           coverage report --include="$(pwd)/*"
