@@ -79,8 +79,14 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
 
             # make sure the event listener is ready before loading the
             # test file
-            while len(m._listeners) < 1:
-                await asyncio.sleep(.1)
+            step = 0.1
+            waited = 0
+            while waited < 5:
+                async with m._listeners_lock:
+                    if len(m._listeners) > 0:
+                        break
+                await asyncio.sleep(step)
+                waited += step
 
             await m.loadfile(self.sample)
             event = await event_wait
