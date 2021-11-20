@@ -60,7 +60,7 @@ jobs:
           pip install coverage
       - name: install mpv
         run: |
-          sudo apt-get -y install mpv
+          sudo apt-get -y --no-install-recommends install mpv
       - name: run unittest with coverage
         run: |
           coverage run -m unittest --buffer -v
