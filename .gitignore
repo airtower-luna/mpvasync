@@ -1,6 +1,8 @@
 *~
-__pycache__/
 
-# data and report for test coverage measurement
+# generated data and caches
 .coverage
 /htmlcov/
+/dist/
+/__pycache__/
+/.mypy_cache/

@@ -187,7 +187,7 @@ async def set_property(args):
         await m.command('set_property', [args.property, args.value])
 
 
-if __name__ == '__main__':
+def main():
     import argparse
     parser = argparse.ArgumentParser(
         description='control mpv via socket IPC')
@@ -251,3 +251,7 @@ if __name__ == '__main__':
             asyncio.run(args.func(args))
         except KeyboardInterrupt:
             logging.info('Received keyboard interrupt, exiting.')
+
+
+if __name__ == '__main__':
+    main()
