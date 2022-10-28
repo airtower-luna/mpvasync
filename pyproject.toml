@@ -33,3 +33,10 @@ tests = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[[tool.mypy.overrides]]
+module = [
+    'argcomplete',
+    'argcomplete.*',
+]
+ignore_missing_imports = true
