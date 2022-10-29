@@ -1,0 +1,47 @@
+[project]
+name = "mpvasync"
+version = "0.1.0"
+authors = [
+  { name="Fiona Klute", email="fiona.klute@gmx.de" },
+]
+description = "mpv IPC socket client based on asyncio"
+license = { text="MIT" }
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Multimedia",
+    "Framework :: AsyncIO",
+]
+
+[project.optional-dependencies]
+argcomplete = [
+    'argcomplete',
+]
+tests = [
+    'coverage',
+]
+
+[project.urls]
+"Homepage" = "https://github.com/airtower-luna/mpvasync"
+"Bug Tracker" = "https://github.com/airtower-luna/mpvasync/issues"
+
+[project.scripts]
+"mpvasync" = "mpvasync:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.mypy]
+exclude = [
+    '^noxfile\.py$',
+]
+
+[[tool.mypy.overrides]]
+module = [
+    'argcomplete',
+    'argcomplete.*',
+]
+ignore_missing_imports = true

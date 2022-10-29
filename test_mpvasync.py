@@ -32,7 +32,8 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self):
         self.mpv = await asyncio.create_subprocess_exec(
-            'mpv', '--idle=yes', f'--input-ipc-server={self.sockpath}',
+            'mpv', '--ao=null', '--idle=yes',
+            f'--input-ipc-server={self.sockpath}',
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
         p = Path(self.sockpath)
         # wait for the socket to be ready

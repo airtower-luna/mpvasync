@@ -9,64 +9,36 @@ permissions:
 
 jobs:
   lint:
-    runs-on: ubuntu-20.04
-    name: Lint
+    runs-on: ubuntu-22.04
+    name: Nox
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3
-        uses: actions/setup-python@v4
+      - uses: actions/cache@v3
         with:
-          python-version: 3.x
-      - name: install flake8
-        run: |
-          pip install flake8
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('noxfile.py', 'pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      - name: Set up Nox
+        uses: airtower-luna/nox@13cd7df9631b2be0340c3c398c3d62d5b612520d
+        with:
+          python-versions: '3.9, 3.10, 3.11'
       - name: setup annotations for flake8 results
         uses: rbialon/flake8-annotations@v1
-      - name: run flake8
-        run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 . --count --exit-zero --show-source --statistics
-
-  typecheck:
-    runs-on: ubuntu-20.04
-    name: Typecheck
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python 3
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.x
-      - name: install mypy
-        run: |
-          pip install mypy
-      - name: run mypy
-        run: mypy .
-
-  test:
-    runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        python-version:
-          - '3.9'
-          - '3.10'
-    name: Test Python ${{ matrix.python-version }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: install coverage
-        run: |
-          pip install coverage
       - name: install mpv
         run: |
           sudo apt-get update
           sudo apt-get -y --no-install-recommends install mpv
-      - name: run unittest with coverage
+      - name: Run tests and report coverage
         run: |
-          coverage run -m unittest --buffer -v
-      - name: coverage report
-        run: |
-          coverage report --include="$(pwd)/*"
+          nox --report test-report.json
+      - name: Store coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: htmlcov/
+      - name: Create job summary
+        if: always()
+        uses: airtower-luna/nox-report-to-job-summary@35d169adab9958f84ae171134d0850b7fdd473c6
+        with:
+          report: test-report.json
