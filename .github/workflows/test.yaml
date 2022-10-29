@@ -13,6 +13,12 @@ jobs:
     name: Nox
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('noxfile.py', 'pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
       - name: Set up Nox
         uses: airtower-luna/nox@13cd7df9631b2be0340c3c398c3d62d5b612520d
         with:
