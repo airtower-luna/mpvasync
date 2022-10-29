@@ -25,9 +25,14 @@ jobs:
           sudo apt-get -y --no-install-recommends install mpv
       - name: Run tests and report coverage
         run: |
-          nox
+          nox --report test-report.json
       - name: Store coverage report
         uses: actions/upload-artifact@v3
         with:
           name: coverage-report
           path: htmlcov/
+      - name: Create job summary
+        if: always()
+        uses: airtower-luna/nox-report-to-job-summary@35d169adab9958f84ae171134d0850b7fdd473c6
+        with:
+          report: test-report.json
