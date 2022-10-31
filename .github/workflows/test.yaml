@@ -20,7 +20,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
       - name: Set up Nox
-        uses: airtower-luna/nox@13cd7df9631b2be0340c3c398c3d62d5b612520d
+        uses: wntrblm/nox@e7cf847b5cb8031cda8f8b6b60ccf7ad9e5eed5a
         with:
           python-versions: '3.9, 3.10, 3.11'
       - name: setup annotations for flake8 results
@@ -39,6 +39,6 @@ jobs:
           path: htmlcov/
       - name: Create job summary
         if: always()
-        uses: airtower-luna/nox-report-to-job-summary@35d169adab9958f84ae171134d0850b7fdd473c6
+        uses: airtower-luna/nox-report-to-job-summary@914dabd44fd077d23ad8e33189b1d5b76fac0798
         with:
           report: test-report.json
