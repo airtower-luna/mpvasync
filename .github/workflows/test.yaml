@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-22.04
     name: Nox
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+      - uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7 # v3.0.11
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('noxfile.py', 'pyproject.toml') }}
@@ -24,7 +24,7 @@ jobs:
         with:
           python-versions: '3.9, 3.10, 3.11'
       - name: setup annotations for flake8 results
-        uses: rbialon/flake8-annotations@v1
+        uses: rbialon/flake8-annotations@48819b39d57c621b5a64a1cdce40a5caa6a43b89 # v1.1
       - name: install mpv
         run: |
           sudo apt-get update
@@ -33,7 +33,7 @@ jobs:
         run: |
           nox --report test-report.json
       - name: Store coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # v3.1.1
         with:
           name: coverage-report
           path: htmlcov/
