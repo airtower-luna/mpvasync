@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # PYTHON_ARGCOMPLETE_OK
+import argparse
 import asyncio
 import json
 import logging
@@ -8,8 +9,8 @@ import re
 import subprocess
 import sys
 from contextlib import asynccontextmanager
-from typing import Any, Dict, AsyncIterable, Mapping, Optional, Sequence, \
-    Set, TYPE_CHECKING
+from typing import Any, Dict, AsyncIterable, AsyncIterator, Mapping, \
+    Optional, Sequence, Self, Set, TYPE_CHECKING
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ class MpvClient:
         self.path = path
         self._commands: Dict[int, MpvCommandState] = dict()
         self._commands_lock = asyncio.Lock()
-        self._listeners: Set[asyncio.Queue] = set()
+        self._listeners: Set[asyncio.Queue[Optional[Dict[str, Any]]]] = set()
         self._listeners_lock = asyncio.Lock()
         self._cid = 1
         self.writer: Optional[asyncio.StreamWriter] = None
@@ -71,8 +72,8 @@ class MpvClient:
             await self._handler
             self.writer = None
 
-    async def listen(self) -> AsyncIterable[Dict]:
-        q: asyncio.Queue[Dict] = asyncio.Queue()
+    async def listen(self) -> AsyncIterable[Dict[str, Any]]:
+        q: asyncio.Queue[Optional[Dict[str, Any]]] = asyncio.Queue()
         async with self._listeners_lock:
             self._listeners.add(q)
         try:
@@ -86,7 +87,7 @@ class MpvClient:
             async with self._listeners_lock:
                 self._listeners.remove(q)
 
-    async def command(self, cmd: str, params: Sequence[str] = []) \
+    async def command(self, cmd: str, params: Sequence[str | int] = []) \
             -> Dict[str, Any]:
         if self.writer is None:
             raise ValueError('Not connected to mpv!')
@@ -119,7 +120,7 @@ class MpvClient:
             raise MpvError(response)
         return response
 
-    async def loadfile(self, loc: str, append: bool = False):
+    async def loadfile(self, loc: str, append: bool = False) -> dict[str, Any]:
         u = urlparse(loc)
         if u.scheme:
             # loc contains a scheme, use URL unmodified
@@ -132,7 +133,7 @@ class MpvClient:
         return await self.command('loadfile', args)
 
     @asynccontextmanager
-    async def connection(self):
+    async def connection(self) -> AsyncIterator[Self]:
         try:
             await self.connect()
             yield self
@@ -140,25 +141,25 @@ class MpvClient:
             await self.close()
 
 
-async def playlist(args):
+async def playlist(args: argparse.Namespace) -> None:
     async with MpvClient(args.socket).connection() as m:
         response = await m.command('get_property', ['playlist'])
         for p in response['data']:
             print(f'{"*" if p.get("current") else " "} {p["filename"]}')
 
 
-async def load_file(args):
+async def load_file(args: argparse.Namespace) -> None:
     async with MpvClient(args.socket).connection() as m:
         for i, f in enumerate(args.file):
             await m.loadfile(f, append=(args.append or i > 0))
 
 
-async def toggle_pause(args):
+async def toggle_pause(args: argparse.Namespace) -> None:
     async with MpvClient(args.socket).connection() as m:
         await m.command('cycle', ['pause'])
 
 
-async def monitor(args):
+async def monitor(args: argparse.Namespace) -> None:
     async with MpvClient(args.socket).connection() as m:
         for i, p in enumerate(args.properties, start=1):
             await m.command('observe_property', [i, p])
@@ -166,9 +167,9 @@ async def monitor(args):
             print(f'Received {event["event"]} event: {event!s}')
 
 
-async def get_property(args):
+async def get_property(args: argparse.Namespace) -> None:
     async with MpvClient(args.socket).connection() as m:
-        async def get_prop_tuple(p):
+        async def get_prop_tuple(p: str) -> tuple[str, dict[str, Any]]:
             response = await m.command('get_property', [p])
             return p, response
 
@@ -182,13 +183,12 @@ async def get_property(args):
     print()
 
 
-async def set_property(args):
+async def set_property(args: argparse.Namespace) -> None:
     async with MpvClient(args.socket).connection() as m:
         await m.command('set_property', [args.property, args.value])
 
 
-def main():
-    import argparse
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='control mpv via socket IPC')
     parser.add_argument(
