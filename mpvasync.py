@@ -8,9 +8,9 @@ import os.path
 import re
 import subprocess
 import sys
+from collections.abc import AsyncIterable, AsyncIterator, Sequence
 from contextlib import asynccontextmanager
-from typing import Any, Dict, AsyncIterable, AsyncIterator, Mapping, \
-    Optional, Sequence, Self, Set, TYPE_CHECKING
+from typing import Any, Self, TYPE_CHECKING
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class MpvError(Exception):
     '''This exception is raised if mpv returns an error for a command.'''
-    def __init__(self, response: Mapping[str, Any]) -> None:
+    def __init__(self, response: dict[str, Any]) -> None:
         super().__init__(response['error'])
 
 
@@ -30,18 +30,18 @@ class MpvCommandState():
     '''
     def __init__(self) -> None:
         self.event = asyncio.Event()
-        self.response: Optional[Dict[str, Any]] = None
+        self.response: dict[str, Any] | None = None
 
 
 class MpvClient:
     def __init__(self, path: str) -> None:
         self.path = path
-        self._commands: Dict[int, MpvCommandState] = dict()
+        self._commands: dict[int, MpvCommandState] = dict()
         self._commands_lock = asyncio.Lock()
-        self._listeners: Set[asyncio.Queue[Optional[Dict[str, Any]]]] = set()
+        self._listeners: set[asyncio.Queue[dict[str, Any] | None]] = set()
         self._listeners_lock = asyncio.Lock()
         self._cid = 1
-        self.writer: Optional[asyncio.StreamWriter] = None
+        self.writer: asyncio.StreamWriter | None = None
 
     async def connect(self) -> None:
         self.reader, self.writer = \
@@ -72,8 +72,8 @@ class MpvClient:
             await self._handler
             self.writer = None
 
-    async def listen(self) -> AsyncIterable[Dict[str, Any]]:
-        q: asyncio.Queue[Optional[Dict[str, Any]]] = asyncio.Queue()
+    async def listen(self) -> AsyncIterable[dict[str, Any]]:
+        q: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
         async with self._listeners_lock:
             self._listeners.add(q)
         try:
@@ -88,7 +88,7 @@ class MpvClient:
                 self._listeners.remove(q)
 
     async def command(self, cmd: str, params: Sequence[str | int] = []) \
-            -> Dict[str, Any]:
+            -> dict[str, Any]:
         if self.writer is None:
             raise ValueError('Not connected to mpv!')
 
