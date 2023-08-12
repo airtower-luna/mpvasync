@@ -5,17 +5,20 @@ import unittest
 import wave
 from mpvasync import MpvClient, MpvError
 from pathlib import Path
+from typing import Any
 
 
 class MpvClientTest(unittest.IsolatedAsyncioTestCase):
-    def setUp(self):
+    sample: str
+
+    def setUp(self) -> None:
         # Create a temporary file path for the mpv IPC socket, mpv
         # will replace the file with its socket.
         fh, self.sockpath = tempfile.mkstemp()
         os.close(fh)
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         fh, sample = tempfile.mkstemp()
         os.close(fh)
         # generate wav sample
@@ -27,10 +30,10 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
         cls.sample = sample
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         os.unlink(cls.sample)
 
-    async def asyncSetUp(self):
+    async def asyncSetUp(self) -> None:
         self.mpv = await asyncio.create_subprocess_exec(
             'mpv', '--ao=null', '--idle=yes',
             f'--input-ipc-server={self.sockpath}',
@@ -40,7 +43,7 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
         while not p.is_socket():
             await asyncio.sleep(.05)
 
-    async def test_load_file(self):
+    async def test_load_file(self) -> None:
         async with MpvClient(self.sockpath).connection() as m:
             await m.loadfile(self.sample)
             response = await m.command('get_property', ['playlist'])
@@ -51,7 +54,7 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
             # ensure internal command data has been cleaned up
             self.assertEqual(m._commands, dict())
 
-    async def test_get_playlist(self):
+    async def test_get_playlist(self) -> None:
         async with MpvClient(self.sockpath).connection() as m:
             response = await m.command('get_property', ['playlist'])
             self.assertEqual(response['error'], 'success')
@@ -60,18 +63,18 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
             # ensure internal command data has been cleaned up
             self.assertEqual(m._commands, dict())
 
-    async def test_invalid_get_command(self):
+    async def test_invalid_get_command(self) -> None:
         async with MpvClient(self.sockpath).connection() as m:
             with self.assertRaises(MpvError):
                 # get_property expects only one parameter
                 await m.command('get_property', ['playlist', 'xyz'])
             self.assertEqual(m._commands, dict())
 
-    async def test_listen_event(self):
+    async def test_listen_event(self) -> None:
         async with MpvClient(self.sockpath).connection() as m:
             await m.command('observe_property', [1, 'playlist'])
 
-            async def wait_playlist_change():
+            async def wait_playlist_change() -> list[dict[str, Any]]:
                 events = list()
                 async for event in m.listen():
                     if event['event'] == 'property-change' \
@@ -85,7 +88,7 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
             # make sure the event listener is ready before loading the
             # test file
             step = 0.1
-            waited = 0
+            waited = 0.0
             while waited < 5:
                 async with m._listeners_lock:
                     if len(m._listeners) > 0:
@@ -102,11 +105,11 @@ class MpvClientTest(unittest.IsolatedAsyncioTestCase):
                     continue
                 self.assertEqual(event['data'][0]['filename'], self.sample)
 
-    async def asyncTearDown(self):
+    async def asyncTearDown(self) -> None:
         self.mpv.terminate()
         stdout, stderr = await self.mpv.communicate()
         print(stdout.decode())
         print(stderr.decode())
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         os.unlink(self.sockpath)
