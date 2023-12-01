@@ -145,7 +145,11 @@ async def playlist(args: argparse.Namespace) -> None:
     async with MpvClient(args.socket).connection() as m:
         response = await m.command('get_property', ['playlist'])
         for p in response['data']:
-            print(f'{"*" if p.get("current") else " "} {p["filename"]}')
+            print(f'{"* " if p.get("current") else "  "}', end='')
+            if 'title' in p:
+                print(f'{p["title"]} ({p["filename"]})')
+            else:
+                print(p['filename'])
 
 
 async def load_file(args: argparse.Namespace) -> None:
