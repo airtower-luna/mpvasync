@@ -19,7 +19,7 @@ def typecheck(session):
 def test(session):
     """Run tests, report coverage."""
     session.install('.[tests]')
-    session.run('coverage', 'run', '--parallel-mode', '-m', 'unittest', '-v')
+    session.run('coverage', 'run', '--parallel-mode', '-m', 'pytest', '-v')
 
 
 @nox.session
