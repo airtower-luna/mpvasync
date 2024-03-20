@@ -1,8 +1,10 @@
 import asyncio
+import json
 import mpvasync
 import os
 import pytest
 import pytest_asyncio
+import re
 import tempfile
 import wave
 from argparse import Namespace
@@ -47,6 +49,15 @@ async def mpv_sock(sockpath):
     stdout, stderr = await mpv.communicate()
     print(stdout.decode())
     print(stderr.decode())
+
+
+def parse_event(line: str) -> dict[str, Any]:
+    m = re.match(r'^Received ([-\w]+) event: (\{.*\})$', line)
+    if m is None:
+        raise ValueError('no event')
+    j = json.loads(m.group(2))
+    assert j['event'] == m.group(1)
+    return j
 
 
 async def test_load_file(mpv_sock, sample):
@@ -115,7 +126,7 @@ async def test_listen_event(mpv_sock, sample):
             assert event['data'][0]['filename'] == sample
 
 
-async def test_loadfile_cmd(mpv_sock, sample, capsys):
+async def test_cmd_funcs(mpv_sock, sample, capsys):
     await mpvasync.load_file(
         Namespace(socket=mpv_sock, file=[sample], append=True))
     await mpvasync.playlist(Namespace(socket=mpv_sock))
@@ -126,24 +137,31 @@ async def test_loadfile_cmd(mpv_sock, sample, capsys):
 
     mon = asyncio.create_task(mpvasync.monitor(
         Namespace(socket=mpv_sock, properties=['idle'])))
-    init_done = "Received property-change event: " \
-        "{'event': 'property-change', 'id': 1, 'name': 'idle', 'data': True}"
-    while init_done not in captured.out:
-        print(captured)
+    # Ensure the monitor is ready, it'll get an initial
+    # property-change event for the watched property.
+    got_event = False
+    for _ in range(100):
         captured = capsys.readouterr()
-        await asyncio.sleep(.01)
+        for line in captured.out.splitlines():
+            j = parse_event(line)
+            if j['event'] == 'property-change':
+                assert j['name'] == 'idle'
+                assert j['data'] is True
+                got_event = True
+        if got_event:
+            break
+        await asyncio.sleep(.02)
+    assert got_event
 
     await asyncio.gather(
         mpvasync.set_property(
             Namespace(socket=mpv_sock, property='playlist-pos', value='0')),
         mpvasync.set_property(
             Namespace(socket=mpv_sock, property='idle', value='once')))
-    await mpvasync.toggle_pause(Namespace(socket=mpv_sock))
-    await mpvasync.toggle_pause(Namespace(socket=mpv_sock))
     await mon
     captured = capsys.readouterr()
     print(captured.out)
-    assert len(captured.out) > 10
-    lines = captured.out.splitlines()
-    assert lines[0].startswith('Received start-file event:')
-    assert lines[-1].startswith('Received end-file event:')
+    events = [parse_event(line) for line in captured.out.splitlines()]
+    assert len(events) > 3
+    assert events[0]['event'] == 'start-file'
+    assert events[-1]['event'] == 'end-file'
