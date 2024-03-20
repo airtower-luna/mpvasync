@@ -41,7 +41,7 @@ async def mpv_sock(sockpath):
     # wait for the socket to be ready
     while not p.is_socket():
         await asyncio.sleep(.05)
-    yield sockpath
+    yield p
     mpv.terminate()
     stdout, stderr = await mpv.communicate()
     print(stdout.decode())
