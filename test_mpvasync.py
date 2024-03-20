@@ -1,10 +1,11 @@
 import asyncio
+import mpvasync
 import os
 import pytest
 import pytest_asyncio
 import tempfile
 import wave
-from mpvasync import MpvClient, MpvError
+from argparse import Namespace
 from pathlib import Path
 from typing import Any
 
@@ -49,7 +50,7 @@ async def mpv_sock(sockpath):
 
 
 async def test_load_file(mpv_sock, sample):
-    async with MpvClient(mpv_sock).connection() as m:
+    async with mpvasync.MpvClient(mpv_sock).connection() as m:
         await m.loadfile(sample)
         response = await m.command('get_property', ['playlist'])
         assert response['error'] == 'success'
@@ -61,7 +62,7 @@ async def test_load_file(mpv_sock, sample):
 
 
 async def test_get_playlist(mpv_sock):
-    async with MpvClient(mpv_sock).connection() as m:
+    async with mpvasync.MpvClient(mpv_sock).connection() as m:
         response = await m.command('get_property', ['playlist'])
         assert response['error'] == 'success'
         assert response['data'] == []
@@ -71,15 +72,15 @@ async def test_get_playlist(mpv_sock):
 
 
 async def test_invalid_get_command(mpv_sock):
-    async with MpvClient(mpv_sock).connection() as m:
-        with pytest.raises(MpvError):
+    async with mpvasync.MpvClient(mpv_sock).connection() as m:
+        with pytest.raises(mpvasync.MpvError):
             # get_property expects only one parameter
             await m.command('get_property', ['playlist', 'xyz'])
         assert len(m._commands) == 0
 
 
 async def test_listen_event(mpv_sock, sample):
-    async with MpvClient(mpv_sock).connection() as m:
+    async with mpvasync.MpvClient(mpv_sock).connection() as m:
         await m.command('observe_property', [1, 'playlist'])
 
         async def wait_playlist_change() -> list[dict[str, Any]]:
@@ -112,3 +113,37 @@ async def test_listen_event(mpv_sock, sample):
             if len(event['data']) == 0:
                 continue
             assert event['data'][0]['filename'] == sample
+
+
+async def test_loadfile_cmd(mpv_sock, sample, capsys):
+    await mpvasync.load_file(
+        Namespace(socket=mpv_sock, file=[sample], append=True))
+    await mpvasync.playlist(Namespace(socket=mpv_sock))
+    captured = capsys.readouterr()
+    lines = captured.out.splitlines()
+    assert len(lines) == 1
+    assert lines[0] == f'  {sample}'
+
+    mon = asyncio.create_task(mpvasync.monitor(
+        Namespace(socket=mpv_sock, properties=['idle'])))
+    init_done = "Received property-change event: " \
+        "{'event': 'property-change', 'id': 1, 'name': 'idle', 'data': True}"
+    while init_done not in captured.out:
+        print(captured)
+        captured = capsys.readouterr()
+        await asyncio.sleep(.01)
+
+    await asyncio.gather(
+        mpvasync.set_property(
+            Namespace(socket=mpv_sock, property='playlist-pos', value='0')),
+        mpvasync.set_property(
+            Namespace(socket=mpv_sock, property='idle', value='once')))
+    await mpvasync.toggle_pause(Namespace(socket=mpv_sock))
+    await mpvasync.toggle_pause(Namespace(socket=mpv_sock))
+    await mon
+    captured = capsys.readouterr()
+    print(captured.out)
+    assert len(captured.out) > 10
+    lines = captured.out.splitlines()
+    assert lines[0].startswith('Received start-file event:')
+    assert lines[-1].startswith('Received end-file event:')
