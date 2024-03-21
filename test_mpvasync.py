@@ -166,3 +166,12 @@ async def test_cmd_funcs(mpv_sock, sample, capsys):
     assert len(events) > 3
     assert events[0]['event'] == 'start-file'
     assert events[-1]['event'] == 'end-file'
+
+
+def test_main(mpv_sock, sample, capsys, monkeypatch):
+    monkeypatch.setattr(
+        'sys.argv',
+        ['mpvasync', '--socket', str(mpv_sock), 'get-property', 'idle'])
+    mpvasync.main()
+    capture = capsys.readouterr()
+    assert json.loads(capture.out)['idle'] is True
