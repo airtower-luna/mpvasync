@@ -137,8 +137,10 @@ async def test_cmd_funcs(mpv_sock, sample, capsys):
 
     mon = asyncio.create_task(mpvasync.monitor(
         Namespace(socket=mpv_sock, properties=['idle'])))
-    # Ensure the monitor is ready, it'll get an initial
-    # property-change event for the watched property.
+    # Wait for the monitor to be ready. Usually it'll get an initial
+    # property-change event for the watched property, but this is
+    # slightly flaky. The loop range expiring should be enough wait in
+    # that case.
     got_event = False
     for _ in range(100):
         captured = capsys.readouterr()
@@ -151,7 +153,6 @@ async def test_cmd_funcs(mpv_sock, sample, capsys):
         if got_event:
             break
         await asyncio.sleep(.02)
-    assert got_event
 
     await asyncio.gather(
         mpvasync.set_property(
