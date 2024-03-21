@@ -34,7 +34,7 @@ class MpvCommandState():
 
 
 class MpvClient:
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: os.PathLike) -> None:
         self.path = path
         self._commands: dict[int, MpvCommandState] = dict()
         self._commands_lock = asyncio.Lock()
@@ -168,7 +168,7 @@ async def monitor(args: argparse.Namespace) -> None:
         for i, p in enumerate(args.properties, start=1):
             await m.command('observe_property', [i, p])
         async for event in m.listen():
-            print(f'Received {event["event"]} event: {event!s}')
+            print(f'Received {event["event"]} event: {json.dumps(event)}')
 
 
 async def get_property(args: argparse.Namespace) -> None:
@@ -181,7 +181,7 @@ async def get_property(args: argparse.Namespace) -> None:
         for coro in asyncio.as_completed(
                 [get_prop_tuple(p) for p in args.properties]):
             p, response = await coro
-            results[p] = response["data"]
+            results[p] = response['data']
 
     json.dump(results, sys.stdout, indent=2)
     print()

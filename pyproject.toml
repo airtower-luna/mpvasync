@@ -21,6 +21,8 @@ argcomplete = [
 ]
 tests = [
     'coverage',
+    'pytest',
+    'pytest-asyncio',
 ]
 
 [project.urls]
@@ -43,5 +45,13 @@ exclude = [
 module = [
     'argcomplete',
     'argcomplete.*',
+    'pytest',
+    'pytest_asyncio',
 ]
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = 'auto'
+
+[tool.coverage.run]
+concurrency = ['thread']
