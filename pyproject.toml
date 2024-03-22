@@ -52,3 +52,21 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = 'auto'
+pythonpath = 'src'
+testpaths = ['tests']
+addopts = ['--import-mode=importlib']
+
+[tool.hatch.build.targets.wheel]
+packages = ['src/mpvasync.py']
+
+[tool.coverage.run]
+source = [
+    'mpvasync',
+    'tests',
+]
+
+[tool.coverage.paths]
+source = [
+    'src/',
+    '.nox/test-*/lib/python*/site-packages/',
+]

@@ -11,7 +11,7 @@ Enjoy! :notes:
 
 ## Command-line interface
 
-[`mpvasync.py`](mpvasync.py) can be used as a command line tool to:
+[`mpvasync.py`](src/mpvasync.py) can be used as a command line tool to:
 
 * Toggle pause status
 * Load files to play

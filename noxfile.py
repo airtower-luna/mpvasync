@@ -21,5 +21,6 @@ def test(session):
     session.install('.[tests]')
     session.run(
         'pytest', '-vv',
+        '--override-ini=pythonpath=',
         '--cov', '--cov-report=term',
         f'--cov-report=html:htmlcov/{session.python}')
