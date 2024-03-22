@@ -22,5 +22,14 @@ def test(session):
     session.run(
         'pytest', '-vv',
         '--override-ini=pythonpath=',
-        '--cov', '--cov-report=term',
-        f'--cov-report=html:htmlcov/{session.python}')
+        '--cov', '--cov-report=term', '--cov-context=test',
+        env={'COVERAGE_FILE': f'.coverage.{session.python}'})
+    session.notify('coverage')
+
+
+@nox.session
+def coverage(session):
+    """Generate combined coverage report."""
+    session.install('coverage')
+    session.run('coverage', 'combine')
+    session.run('coverage', 'html', '--show-contexts')
