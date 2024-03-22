@@ -19,13 +19,7 @@ def typecheck(session):
 def test(session):
     """Run tests, report coverage."""
     session.install('.[tests]')
-    session.run('coverage', 'run', '--parallel-mode', '-m', 'pytest', '-vv')
-
-
-@nox.session
-def coverage(session):
-    """Generage coverage report."""
-    session.install('coverage')
-    session.run('coverage', 'combine')
-    session.run('coverage', 'report', '-m', 'mpvasync.py')
-    session.run('coverage', 'html', 'mpvasync.py')
+    session.run(
+        'pytest', '-vv',
+        '--cov', '--cov-report=term',
+        f'--cov-report=html:htmlcov/{session.python}')
