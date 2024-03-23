@@ -15,17 +15,21 @@ def typecheck(session):
     session.run('mypy', '.')
 
 
-@nox.session(python=['3.11'])
+@nox.session(python=['3.11', '3.12'])
 def test(session):
     """Run tests, report coverage."""
     session.install('.[tests]')
-    session.run('coverage', 'run', '--parallel-mode', '-m', 'pytest', '-vv')
+    session.run(
+        'pytest', '-vv',
+        '--override-ini=pythonpath=',
+        '--cov', '--cov-report=term', '--cov-context=test',
+        env={'COVERAGE_FILE': f'.coverage.{session.python}'})
+    session.notify('coverage')
 
 
 @nox.session
 def coverage(session):
-    """Generage coverage report."""
+    """Generate combined coverage report."""
     session.install('coverage')
     session.run('coverage', 'combine')
-    session.run('coverage', 'report', '-m', 'mpvasync.py')
-    session.run('coverage', 'html', 'mpvasync.py')
+    session.run('coverage', 'html', '--show-contexts')
