@@ -12,6 +12,7 @@ def lint(session):
 def typecheck(session):
     """Typecheck using MyPy."""
     session.install('mypy')
+    session.install('.[argcomplete]')
     session.run('mypy', '.')
 
 

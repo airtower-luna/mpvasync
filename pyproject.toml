@@ -43,8 +43,6 @@ exclude = [
 
 [[tool.mypy.overrides]]
 module = [
-    'argcomplete',
-    'argcomplete.*',
     'pytest',
     'pytest_asyncio',
 ]
