@@ -163,9 +163,19 @@ async def test_cmd_funcs(mpv_sock, sample, capsys):
     captured = capsys.readouterr()
     print(captured.out)
     events = [parse_event(line) for line in captured.out.splitlines()]
+    print(json.dumps(events, indent=2))
     assert len(events) > 3
-    assert events[0]['event'] == 'start-file'
-    assert events[-1]['event'] == 'end-file'
+    # property-change for the set above and start-file may occur in
+    # different order, the important thing is that they occur before
+    # end-file.
+    prop_change = next(
+        filter(lambda e: e['event'] == 'property-change', events))
+    assert prop_change['name'] == 'idle'
+    assert prop_change['data'] == 'once'
+    start = next(filter(lambda e: e['event'] == 'start-file', events))
+    end = next(filter(lambda e: e['event'] == 'end-file', events))
+    assert events.index(start) < events.index(end)
+    assert events.index(prop_change) < events.index(end)
 
 
 def test_main(mpv_sock, sample, capsys, monkeypatch):
