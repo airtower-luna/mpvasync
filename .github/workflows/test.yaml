@@ -22,7 +22,7 @@ jobs:
       - name: Set up Nox
         uses: wntrblm/nox@1199ab3892b1a941f80ff052083d0a571abed79d # 2024.10.09
         with:
-          python-versions: '3.11, 3.12'
+          python-versions: '3.11, 3.12, 3.13'
       - name: setup annotations for flake8 results
         uses: airtower-luna/flake8-annotations@d29f60162d03c010b8604adc1d5b825c989a9acc # node20
       - name: install mpv
