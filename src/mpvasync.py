@@ -34,7 +34,7 @@ class MpvCommandState():
 
 
 class MpvClient:
-    def __init__(self, path: os.PathLike) -> None:
+    def __init__(self, path: os.PathLike[str]) -> None:
         self.path = path
         self._commands: dict[int, MpvCommandState] = dict()
         self._commands_lock = asyncio.Lock()

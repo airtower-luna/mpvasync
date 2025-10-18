@@ -1,5 +1,7 @@
 import nox
 
+nox.options.download_python = 'never'
+
 
 @nox.session
 def lint(session):
@@ -16,7 +18,7 @@ def typecheck(session):
     session.run('mypy', '.')
 
 
-@nox.session(python=['3.11', '3.12', '3.13'])
+@nox.session(python=['3.13', '3.14'])
 def test(session):
     """Run tests, report coverage."""
     session.install('.[tests]')

@@ -8,12 +8,13 @@ import re
 import tempfile
 import wave
 from argparse import Namespace
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
 
 @pytest.fixture
-def sockpath():
+def sockpath() -> Iterator[str]:
     fh, s = tempfile.mkstemp()
     os.close(fh)
     yield s
@@ -21,7 +22,7 @@ def sockpath():
 
 
 @pytest.fixture(scope='module')
-def sample():
+def sample() -> Iterator[str]:
     fh, sample = tempfile.mkstemp()
     os.close(fh)
     # generate wav sample
@@ -35,7 +36,7 @@ def sample():
 
 
 @pytest_asyncio.fixture
-async def mpv_sock(sockpath):
+async def mpv_sock(sockpath: str):
     mpv = await asyncio.create_subprocess_exec(
         'mpv', '--ao=null', '--idle=yes',
         f'--input-ipc-server={sockpath}',
@@ -57,10 +58,11 @@ def parse_event(line: str) -> dict[str, Any]:
         raise ValueError('no event')
     j = json.loads(m.group(2))
     assert j['event'] == m.group(1)
+    assert isinstance(j, dict)
     return j
 
 
-async def test_load_file(mpv_sock, sample):
+async def test_load_file(mpv_sock: Path, sample: str):
     async with mpvasync.MpvClient(mpv_sock).connection() as m:
         await m.loadfile(sample)
         response = await m.command('get_property', ['playlist'])
@@ -72,7 +74,7 @@ async def test_load_file(mpv_sock, sample):
         assert len(m._commands) == 0
 
 
-async def test_get_playlist(mpv_sock):
+async def test_get_playlist(mpv_sock: Path):
     async with mpvasync.MpvClient(mpv_sock).connection() as m:
         response = await m.command('get_property', ['playlist'])
         assert response['error'] == 'success'
@@ -82,7 +84,7 @@ async def test_get_playlist(mpv_sock):
         assert len(m._commands) == 0
 
 
-async def test_invalid_get_command(mpv_sock):
+async def test_invalid_get_command(mpv_sock: Path):
     async with mpvasync.MpvClient(mpv_sock).connection() as m:
         with pytest.raises(mpvasync.MpvError):
             # get_property expects only one parameter
@@ -90,7 +92,7 @@ async def test_invalid_get_command(mpv_sock):
         assert len(m._commands) == 0
 
 
-async def test_listen_event(mpv_sock, sample):
+async def test_listen_event(mpv_sock: Path, sample: str):
     async with mpvasync.MpvClient(mpv_sock).connection() as m:
         await m.command('observe_property', [1, 'playlist'])
 
@@ -126,7 +128,8 @@ async def test_listen_event(mpv_sock, sample):
             assert event['data'][0]['filename'] == sample
 
 
-async def test_cmd_funcs(mpv_sock, sample, capsys):
+async def test_cmd_funcs(
+        mpv_sock: Path, sample: str, capsys: pytest.CaptureFixture[str]):
     await mpvasync.load_file(
         Namespace(socket=mpv_sock, file=[sample], append=True))
     await mpvasync.playlist(Namespace(socket=mpv_sock))
@@ -178,7 +181,9 @@ async def test_cmd_funcs(mpv_sock, sample, capsys):
     assert events.index(prop_change) < events.index(end)
 
 
-def test_main(mpv_sock, sample, capsys, monkeypatch):
+def test_main(
+        mpv_sock: Path, sample: str, capsys: pytest.CaptureFixture[str],
+        monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
         'sys.argv',
         ['mpvasync', '--socket', str(mpv_sock), 'get-property', 'idle'])
