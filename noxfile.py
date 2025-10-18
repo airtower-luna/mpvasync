@@ -1,5 +1,7 @@
 import nox
 
+nox.options.download_python = 'never'
+
 
 @nox.session
 def lint(session):
