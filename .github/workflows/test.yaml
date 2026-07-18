@@ -20,7 +20,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
       - name: Set up Nox
-        uses: wntrblm/nox@97e345e6a26bb2c5aacff9cc4327bd4ac1b00ce6 # 2026.04.10
+        uses: wntrblm/nox@3284968a16fa5bd7fc0cc64a69a531404ccb4756 # 2026.07.11
         with:
           python-versions: '3.13, 3.14'
       - name: setup annotations for flake8 results
