@@ -17,7 +17,7 @@ classifiers = [
 
 [project.optional-dependencies]
 argcomplete = [
-    'argcomplete',
+    'argcomplete != 3.7.1, != 3.7.2',
 ]
 tests = [
     'pytest',
