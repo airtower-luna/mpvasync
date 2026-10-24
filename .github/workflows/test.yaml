@@ -24,7 +24,7 @@ jobs:
         with:
           python-versions: '3.13, 3.14, 3.15'
       - name: setup annotations for flake8 results
-        uses: airtower-luna/flake8-annotations@d29f60162d03c010b8604adc1d5b825c989a9acc # node20
+        uses: airtower-luna/flake8-annotations@d18e78ad3c57d81fe3c4d794f0de16ea46baa9f8 # node24
       - name: install mpv
         run: |
           sudo apt-get update
