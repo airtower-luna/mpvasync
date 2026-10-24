@@ -18,7 +18,7 @@ def typecheck(session):
     session.run('mypy', '.')
 
 
-@nox.session(python=['3.13', '3.14'])
+@nox.session(python=['3.13', '3.14', '3.15'])
 def test(session):
     """Run tests, report coverage."""
     session.install('.[tests]')
