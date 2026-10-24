@@ -64,6 +64,7 @@ source = [
     'mpvasync',
     'tests',
 ]
+core = 'ctrace'
 
 [tool.coverage.paths]
 source = [
