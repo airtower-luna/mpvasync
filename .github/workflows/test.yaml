@@ -39,6 +39,6 @@ jobs:
           path: htmlcov/
       - name: Create job summary
         if: always()
-        uses: airtower-luna/nox-report-to-job-summary@be910cde472360a81dcf7c38b703a607eb35c8e1
+        uses: airtower-luna/nox-report-to-job-summary@dc9846c8e7cf607f686a0224bdaedc6ca699e33d
         with:
           report: test-report.json
